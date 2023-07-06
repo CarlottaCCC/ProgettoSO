@@ -34,6 +34,25 @@ int MinBurst(FakeOS* os) {
     return min;
 }
 
+//Funzione per trovare il pcb con il burst minimo
+ListItem* FindMinBurst(FakeOS* os,int MinBurst) {
+  ListItem* aux = os->ready.first;
+
+  while(aux){
+
+    FakePCB* pcb =  (FakePCB*) aux;
+    ProcessEvent* e = (ProcessEvent*)pcb->events.first;
+    duration = e->duration;
+
+    if (duration == MinBurst) 
+      return aux;
+
+    aux=aux->next;
+  
+  }
+  return 0;
+
+}
 
 void schedRR(FakeOS* os, void* args_){
   SchedRRArgs* args=(SchedRRArgs*)args_;
