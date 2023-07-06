@@ -9,36 +9,31 @@ typedef struct {
   int quantum;
 } SchedRRArgs;
 
-// Funzione per trovare il processo con il minimo CPU burst in ready
-FakePCB* MinBurst(FakeOS* os) {
+//Funzione che trova il CPU burst minimo nella ready queue
+int MinBurst(FakeOS* os) {
   if (! os->ready.first)
-    return null;
+    return 0;
 
-  int duration = 0;
+  int min = 10000;
+  int duration;
+  ListItem* node = os->ready.first;
 
-  FakePCB* minPCB = os->ready.first;
-  ProcessEvent* e = (ProcessEvent*) minPCB->events.first
-  assert(e->type==CPU);
-  int min = e->duration;
+  while(node) {
 
-  while (os->ready) {
-    FakePCB* pcb = os->ready.first
-    ProcessEvent* e = (ProcessEvent*) pcb->events.first
-    assert(e->type==CPU);
+    FakePCB* pcb =  (FakePCB*) node;
+    ProcessEvent* e = (ProcessEvent*)pcb->events.first;
     duration = e->duration;
-    
-    if (duration < min) {
-      min = duration;
-      minPCB = os->ready.first;
 
+    if (duration < min) {
+      min = duration
     }
 
-    (os->ready)++;
+    node = node->next;
+    }
 
-  }
-  return minPCB;
-
+    return min;
 }
+
 
 void schedRR(FakeOS* os, void* args_){
   SchedRRArgs* args=(SchedRRArgs*)args_;
@@ -47,6 +42,11 @@ void schedRR(FakeOS* os, void* args_){
   // if none, return
   if (! os->ready.first)
     return;
+
+    // trova elemento con min burst nella ready queue
+    // lo togli dalla coda
+    // lo fai partire
+
 
   FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
   os->running=pcb;
