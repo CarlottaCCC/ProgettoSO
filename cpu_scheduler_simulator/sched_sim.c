@@ -7,14 +7,15 @@ FakeOS os;
 
 typedef struct {
   int quantum;
-} SchedRRArgs;
+} SchedSJFArgs;
 
-//Funzione che trova il CPU burst minimo nella ready queue
-int MinBurst(FakeOS* os) {
+//Funzione che trova il PCB con il CPU burst minimo nella ready queue
+ListItem* MinBurst(FakeOS* os) {
   if (! os->ready.first)
     return 0;
 
   int min = 10000;
+  ListItem* min_item;
   int duration;
   ListItem* node = os->ready.first;
 
@@ -25,49 +26,30 @@ int MinBurst(FakeOS* os) {
     duration = e->duration;
 
     if (duration < min) {
-      min = duration
+      min = duration;
+      min_item = node;
     }
 
     node = node->next;
     }
 
-    return min;
+    return min_item;
 }
 
-//Funzione per trovare il pcb con il burst minimo
-ListItem* FindMinBurst(FakeOS* os,int MinBurst) {
-  ListItem* aux = os->ready.first;
-
-  while(aux){
-
-    FakePCB* pcb =  (FakePCB*) aux;
-    ProcessEvent* e = (ProcessEvent*)pcb->events.first;
-    duration = e->duration;
-
-    if (duration == MinBurst) 
-      return aux;
-
-    aux=aux->next;
-  
-  }
-  return 0;
-
-}
-
-void schedRR(FakeOS* os, void* args_){
-  SchedRRArgs* args=(SchedRRArgs*)args_;
+void schedSJF(FakeOS* os, void* args_){
+  SchedSJFArgs* args=(SchedSJFArgs*)args_;
 
   // look for the first process in ready
   // if none, return
   if (! os->ready.first)
     return;
 
-    // trova elemento con min burst nella ready queue
-    // lo togli dalla coda
-    // lo fai partire
+  //trovo l'elemento con il min burst
+  ListItem* min_item = MinBurst(os);
+  FakePCB* pcb = (FakePCB*) List_detach(&os->ready, min_item);
 
 
-  FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
+  //FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
   os->running=pcb;
   
   assert(pcb->events.first);
@@ -90,10 +72,10 @@ void schedRR(FakeOS* os, void* args_){
 
 int main(int argc, char** argv) {
   FakeOS_init(&os);
-  SchedRRArgs srr_args;
+  SchedSJFArgs srr_args;
   srr_args.quantum=5;
   os.schedule_args=&srr_args;
-  os.schedule_fn=schedRR;
+  os.schedule_fn=schedSJF;
   
   for (int i=1; i<argc; ++i){
     FakeProcess new_process;
