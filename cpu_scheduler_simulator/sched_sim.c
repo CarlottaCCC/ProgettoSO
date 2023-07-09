@@ -7,7 +7,6 @@ FakeOS os;
 
 typedef struct {
   int quantum;
-  int prev_quantum;
   float alpha;
 } SchedSJFArgs;
 
@@ -25,7 +24,6 @@ ListItem* MinBurst(FakeOS* os) {
 
     FakePCB* pcb =  (FakePCB*) node;
     ProcessEvent* e = (ProcessEvent*)pcb->events.first;
-    //duration = e->p_quantum;
     duration = e->duration;
 
     if (duration < min) {
@@ -43,16 +41,14 @@ ListItem* MinBurst(FakeOS* os) {
 void schedSJF(FakeOS* os, void* args_){
   SchedSJFArgs* args=(SchedSJFArgs*)args_;
   float alpha = args->alpha;
-  int q_current = args->quantum;
-  int prev_quantum = args->prev_quantum;
-  int q_new;
+
 
   // look for the first process in ready
   // if none, return
   if (! os->ready.first)
     return;
 
-  //trovo l'elemento con il min burst
+  //trovo l'elemento con il min burst 
   ListItem* min_item = MinBurst(os);
   FakePCB* pcb = (FakePCB*) List_detach(&os->ready, min_item);
 
@@ -63,6 +59,12 @@ void schedSJF(FakeOS* os, void* args_){
   assert(pcb->events.first);
   ProcessEvent* e = (ProcessEvent*)pcb->events.first;
   assert(e->type==CPU);
+
+  //quantum prediction
+  args->quantum = (alpha)*(e->duration) + (1 - alpha)*(args->quantum);
+  args_ = args;
+  printf("CURRENT QUANTUM: %d\n", args->quantum);
+
 
   // look at the first event
   // if duration>quantum
@@ -77,11 +79,6 @@ void schedSJF(FakeOS* os, void* args_){
     List_pushFront(&pcb->events, (ListItem*)qe);
   }
 
-  //aggiornameno quantum
-  args->prev_quantum = q_current;
-  q_new = alpha * (q_current) + (1-alpha)*(prev_quantum);
-  args->quantum = q_new;
-  args_ = (void*) args;
   
 };
 
@@ -89,7 +86,6 @@ int main(int argc, char** argv) {
   FakeOS_init(&os);
   SchedSJFArgs srr_args;
   srr_args.quantum=5;
-  srr_args.prev_quantum = 0;
   srr_args.alpha = 0.5;
   os.schedule_args=&srr_args;
   os.schedule_fn=schedSJF;
