@@ -36,6 +36,7 @@ int FakeProcess_load(FakeProcess* p, const char* filename) {
       e->list.prev=e->list.next=0;
       e->type=CPU;
       e->duration=duration;
+
       List_pushBack(&p->events, (ListItem*)e);
       ++num_events;
       goto next_round;
