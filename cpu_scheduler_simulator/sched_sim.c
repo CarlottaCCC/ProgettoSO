@@ -44,7 +44,7 @@ ListItem* MinBurst(FakeOS* os) {
 void schedSJF(FakeOS* os, void* args_){
   SchedSJFArgs* args=(SchedSJFArgs*)args_;
   float alpha = args->alpha;
-  int num_cpu = args->num_cpu;
+  int num_cpu = os->num_cpu;
 
 
   // look for the first process in ready
@@ -52,30 +52,35 @@ void schedSJF(FakeOS* os, void* args_){
   if (! os->ready.first)
     return;
   
-  for (int i=0; i < num_cpu; i++) {
-    if (! os->ready.first) break;
+  //for (int i=0; i < num_cpu && os->ready.first; i++) {
 
-    if (os->cpu_assignments[i] == 0) {
+    //if (os->cpu_assignments[i] == 0) {
+
+      while ((os->running.size < num_cpu) && (os->ready.first)) { 
+      
+      //while (os->running.size < num_cpu) {
 
       //trovo l'elemento con il min burst e lo assegno ad una cpu disponibile
 
       ListItem* min_item = MinBurst(os);
       FakePCB* pcb = (FakePCB*) List_detach(&os->ready, min_item);
 
-        os->cpu_assignments[i] = pcb->pid;
-        pcb->cpu = i;
+        //pcb->cpu = i;
         //quindi c'è una lista di running
         //os->running=pcb;
         List_pushFront(&os->running, (ListItem*)pcb);
+        os->count++;
+        //printf("COUNT %d\n", os->count);
+        //printf("\nIL PROCESSO %d E' ENTRATO NELLO SCHEDULER!!!",pcb->pid);
 
         assert(pcb->events.first);
         ProcessEvent* e = (ProcessEvent*)pcb->events.first;
         assert(e->type==CPU);
 
         //quantum prediction
-        args->quantum = (alpha)*(e->duration) + (1 - alpha)*(args->quantum);
-        args_ = args;
-        printf("CURRENT QUANTUM: %d\n", args->quantum);
+        //args->quantum = (alpha)*(e->duration) + (1 - alpha)*(args->quantum);
+        //args_ = args;
+        //printf("CURRENT QUANTUM: %d\n", args->quantum);
 
 
         // look at the first event
@@ -90,9 +95,13 @@ void schedSJF(FakeOS* os, void* args_){
           e->duration-=args->quantum;
           List_pushFront(&pcb->events, (ListItem*)qe);
         }
-    }
 
-  }
+      }
+
+      return;
+    
+
+
   
   
 
@@ -104,9 +113,17 @@ int main(int argc, char** argv) {
   SchedSJFArgs ssjf_args;
   ssjf_args.quantum=5;
   ssjf_args.alpha = 0.5;
-  ssjf_args.num_cpu = 2;
+  //ssjf_args.num_cpu = 2;
   os.schedule_args=&ssjf_args;
   os.schedule_fn=schedSJF;
+
+  printf("Inserisci il numero di CPU che vuoi utilizzare!");
+  scanf("%i", &(os.num_cpu));
+
+  for (int i = 0; i < os.num_cpu; i++) {
+    os.cpu_assignments[i] = 0;
+  }
+
   
   for (int i=1; i<argc; ++i){
     FakeProcess new_process;

@@ -12,10 +12,8 @@ void FakeOS_init(FakeOS* os) {
   List_init(&os->processes);
   os->timer=0;
   os->schedule_fn=0;
+  os->count=0;
 
-  for (int i = 0; i < MAX_CPU; i++) {
-    os->cpu_assignments[i] = 0;
-  }
 
 }
 
@@ -80,6 +78,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
 void FakeOS_simStep(FakeOS* os){
   
   printf("************** TIME: %08d **************\n", os->timer);
+
 
   //scan process waiting to be started
   //and create all processes starting now
@@ -154,6 +153,8 @@ void FakeOS_simStep(FakeOS* os){
 
   while (running_item) {
 
+    ListItem* next_running_item = running_item->next;
+
     FakePCB* running = (FakePCB*) running_item;
 
     printf("\trunning pid: %d\n", running?running->pid:-1);
@@ -162,24 +163,28 @@ void FakeOS_simStep(FakeOS* os){
     assert(e->type==CPU);
     e->duration--;
     printf("\t\tremaining time:%d\n",e->duration);
+
+   
     if (e->duration==0){
+
       printf("\t\tend burst\n");
       List_popFront(&running->events);
       //*************************************
-      List_detach(&os->running,(ListItem*)running);
-      //libero la cpu
-      for (int i = 0; i < MAX_CPU; i++) {
-        if (os->cpu_assignments[i] == running->pid) {
-          os->cpu_assignments[i] = 0;
-        }
-      }
+      
 
       free(e);
+      //libero la cpu
+
+      List_detach(&os->running,(ListItem*)running);
+      os->count--;
+      //printf("COUNT %d\n", os->count);
+
+    
       
 
       if (! running->events.first) {
         printf("\t\tend process\n");
-        free(running); // kill process
+        //free(running); // kill process
 
 
       } else {
@@ -196,25 +201,45 @@ void FakeOS_simStep(FakeOS* os){
         }
       }
     }
-      //os->running = 0;
 
-      running_item = running_item->next;
+     running_item = next_running_item;
+      //os->running = 0;
+      
+
+
 
 
   }
 
 
   // call schedule, if defined
-  if (os->schedule_fn && ! os->running.first){
+  //&& ! os->running.first)
+
+  if (os->schedule_fn)
+    
     (*os->schedule_fn)(os, os->schedule_args); 
-  }
+        
+  
+  
+ 
 
   // if running not defined and ready queue not empty
   // put the first in ready to run
   //if (! os->running && os->ready.first) {
     if (os->ready.first) {
-      ListItem* new_running = List_popFront(&os->ready);
-      List_pushBack(&os->running, new_running);
+      //debugging
+      ListItem* item = os->ready.first;
+      printf("LISTA READY: ");
+      printf("{ ");
+       while (item) {
+        FakePCB* fake = (FakePCB*) item;
+
+        printf("%d ", fake->pid);
+        item = item->next;
+      }
+      printf(" }\n");
+      //ListItem* new_running = List_popFront(&os->ready);
+      //List_pushBack(&os->running, new_running);
     
   }
 
