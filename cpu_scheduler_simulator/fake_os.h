@@ -1,14 +1,13 @@
 #include "fake_process.h"
 #include "linked_list.h"
 #pragma once
-#define MAX_CPU 5
+
 
 
 typedef struct {
   ListItem list;
   int pid;
   ListHead events;
-  int cpu;
 } FakePCB;
 
 struct FakeOS;
@@ -25,8 +24,12 @@ typedef struct FakeOS{
   void* schedule_args;
   
   ListHead processes;
+  int num_cpu;
 
-  int cpu_assignments[MAX_CPU];
+  int count;
+  int prev_quantum;
+  
+  int cpu_assignments[];
 } FakeOS;
 
 void FakeOS_init(FakeOS* os);

@@ -13,6 +13,7 @@ void FakeOS_init(FakeOS* os) {
   os->timer=0;
   os->schedule_fn=0;
   os->count=0;
+  os->prev_quantum=0;
 
 
 }
@@ -161,11 +162,17 @@ void FakeOS_simStep(FakeOS* os){
 
     ProcessEvent* e=(ProcessEvent*) running->events.first;
     assert(e->type==CPU);
-    e->duration--;
-    printf("\t\tremaining time:%d\n",e->duration);
+    //e->duration--;
+    e->quantum--;
+    e->event_timer++;
+    //printf("\t\tremaining time:%d\n",e->duration);
+    printf("\t\tremaining quantum:%d\n",e->quantum);
 
-   
-    if (e->duration==0){
+
+    //if (e->duration==0){
+      if (e->event_timer == e->duration) { 
+
+      printf("\t\tevent timer terminato\n");
 
       printf("\t\tend burst\n");
       List_popFront(&running->events);
@@ -200,6 +207,29 @@ void FakeOS_simStep(FakeOS* os){
           break;
         }
       }
+    }
+
+    else if (e->quantum == 0 && e->event_timer < e->duration) {
+      //quantum è finito ma l'evento non ancora
+      // evento push front nella lista degli eventi cpu del processo
+      List_detach(&os->running,(ListItem*)running);
+      //List_pushFront(&running->events, (ListItem*)e);
+      //verrà switchato con un altro evento
+      os->prev_quantum = e->event_timer;
+      printf("\t\tEnd quantum, switching process\n");
+      //scheduler decide prossimo
+      e=(ProcessEvent*) running->events.first;
+        switch (e->type){
+        case CPU:
+          printf("\t\tmove to ready\n");
+          List_pushBack(&os->ready, (ListItem*) running);
+          break;
+        case IO:
+          printf("\t\tmove to waiting\n");
+          List_pushBack(&os->waiting, (ListItem*) running);
+          break;
+        }
+
     }
 
      running_item = next_running_item;

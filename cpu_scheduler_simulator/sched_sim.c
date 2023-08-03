@@ -20,17 +20,17 @@ ListItem* MinBurst(FakeOS* os) {
 
   int min = 10000;
   ListItem* min_item;
-  int duration;
+  int quantum;
   ListItem* node = os->ready.first;
 
   while(node) {
 
     FakePCB* pcb =  (FakePCB*) node;
     ProcessEvent* e = (ProcessEvent*)pcb->events.first;
-    duration = e->duration;
+    quantum = e->quantum;
 
-    if (duration < min) {
-      min = duration;
+    if (quantum < min) {
+      min = quantum;
       min_item = node;
     }
 
@@ -77,6 +77,11 @@ void schedSJF(FakeOS* os, void* args_){
         ProcessEvent* e = (ProcessEvent*)pcb->events.first;
         assert(e->type==CPU);
 
+        if (os->prev_quantum != 0) {
+          e->quantum = alpha * (e->quantum) + (1-alpha)*(os->prev_quantum);
+          printf("sto calcolando il prossimo quanto che è: %d\n", e->quantum);
+        }
+
         //quantum prediction
         //args->quantum = (alpha)*(e->duration) + (1 - alpha)*(args->quantum);
         //args_ = args;
@@ -87,14 +92,14 @@ void schedSJF(FakeOS* os, void* args_){
         // if duration>quantum
         // push front in the list of event a CPU event of duration quantum
         // alter the duration of the old event subtracting quantum
-        if (e->duration>args->quantum) {
-          ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
-          qe->list.prev=qe->list.next=0;
-          qe->type=CPU;
-          qe->duration=args->quantum;
-          e->duration-=args->quantum;
-          List_pushFront(&pcb->events, (ListItem*)qe);
-        }
+        //if (e->duration>args->quantum) {
+          //ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
+          //qe->list.prev=qe->list.next=0;
+          //qe->type=CPU;
+          //qe->duration=args->quantum;
+          //e->duration-=args->quantum;
+          //List_pushFront(&pcb->events, (ListItem*)qe);
+       // }
 
       }
 
@@ -112,7 +117,7 @@ int main(int argc, char** argv) {
   FakeOS_init(&os);
   SchedSJFArgs ssjf_args;
   ssjf_args.quantum=5;
-  ssjf_args.alpha = 0.5;
+  ssjf_args.alpha = 0.6;
   //ssjf_args.num_cpu = 2;
   os.schedule_args=&ssjf_args;
   os.schedule_fn=schedSJF;
@@ -136,6 +141,7 @@ int main(int argc, char** argv) {
       List_pushBack(&os.processes, (ListItem*)new_process_ptr);
     }
   }
+
 
   printf("num processes in queue %d\n", os.processes.size);
   while(os.running.first
