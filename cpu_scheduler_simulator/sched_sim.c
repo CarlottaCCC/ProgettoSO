@@ -121,9 +121,10 @@ int main(int argc, char** argv) {
   //ssjf_args.num_cpu = 2;
   os.schedule_args=&ssjf_args;
   os.schedule_fn=schedSJF;
+  os.num_cpu = 4;
 
-  printf("Inserisci il numero di CPU che vuoi utilizzare!");
-  scanf("%i", &(os.num_cpu));
+  //printf("Inserisci il numero di CPU che vuoi utilizzare!");
+  //scanf("%i", &(os.num_cpu));
 
   for (int i = 0; i < os.num_cpu; i++) {
     os.cpu_assignments[i] = 0;
