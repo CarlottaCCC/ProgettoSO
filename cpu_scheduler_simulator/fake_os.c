@@ -12,7 +12,7 @@ void FakeOS_init(FakeOS* os) {
   List_init(&os->processes);
   os->timer=0;
   os->schedule_fn=0;
-  os->count=0;
+  //os->count=0;
   os->prev_quantum=0;
 
 
@@ -24,8 +24,6 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   // we check that in the list of PCBs there is no
   // pcb having the same pid
 
-  //****** modifica
-  //assert( !os->running.first) || os->running->pid!=p->pid) && "pid taken");
 
   ListItem* aux = os->running.first;
   while(aux){
@@ -143,11 +141,11 @@ void FakeOS_simStep(FakeOS* os){
   // and reschedule process
   // if last event, destroy running
 
-  //FakePCB* running=os->running;
+  
   ListItem* running_item = os->running.first;
-  //FakePCB* running = (FakePCB*) running_item;
+  
 
-  //printf("\trunning pid: %d\n", running?running->pid:-1);
+  
   if (!os->running.first) {
     printf("\trunning pid: -1\n");
   }
@@ -162,15 +160,14 @@ void FakeOS_simStep(FakeOS* os){
 
     ProcessEvent* e=(ProcessEvent*) running->events.first;
     assert(e->type==CPU);
-    //e->duration--;
+   
     e->quantum--;
     e->event_timer++;
-    //printf("\t\tremaining time:%d\n",e->duration);
+
     printf("\t\tremaining quantum:%d\n",e->quantum);
 
 
-    //if (e->duration==0){
-      if (e->event_timer == e->duration) { 
+      if ((e->event_timer == e->duration) && (e->quantum == 0)) { 
 
       printf("\t\tevent timer terminato\n");
 
@@ -183,15 +180,12 @@ void FakeOS_simStep(FakeOS* os){
       //libero la cpu
 
       List_detach(&os->running,(ListItem*)running);
-      os->count--;
-      //printf("COUNT %d\n", os->count);
 
     
       
 
       if (! running->events.first) {
         printf("\t\tend process\n");
-        //free(running); // kill process
 
 
       } else {
@@ -232,8 +226,45 @@ void FakeOS_simStep(FakeOS* os){
 
     }
 
+    else if ((e->event_timer == e->duration) && (e->quantum > 0)) {
+
+      printf("\t\tevent timer terminato\n");
+
+      printf("\t\tend burst\n");
+      List_popFront(&running->events);
+      //*************************************
+      
+
+      free(e);
+      //libero la cpu
+
+      List_detach(&os->running,(ListItem*)running);
+      os->prev_quantum = e->duration + e->quantum;
+
+    
+      
+
+      if (! running->events.first) {
+        printf("\t\tend process\n");
+
+
+      } else {
+        e=(ProcessEvent*) running->events.first;
+        switch (e->type){
+        case CPU:
+          printf("\t\tmove to ready\n");
+          List_pushBack(&os->ready, (ListItem*) running);
+          break;
+        case IO:
+          printf("\t\tmove to waiting\n");
+          List_pushBack(&os->waiting, (ListItem*) running);
+          break;
+        }
+      }
+
+    }
+
      running_item = next_running_item;
-      //os->running = 0;
       
 
 
@@ -243,7 +274,6 @@ void FakeOS_simStep(FakeOS* os){
 
 
   // call schedule, if defined
-  //&& ! os->running.first)
 
   if (os->schedule_fn)
     

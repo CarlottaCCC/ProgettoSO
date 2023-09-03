@@ -14,7 +14,7 @@ struct FakeOS;
 typedef void (*ScheduleFn)(struct FakeOS* os, void* args);
 
 typedef struct FakeOS{
-  //FakePCB* running;
+  
   ListHead running;
 
   ListHead ready;
@@ -26,10 +26,10 @@ typedef struct FakeOS{
   ListHead processes;
   int num_cpu;
 
-  int count;
+  
   int prev_quantum;
   
-  int cpu_assignments[];
+  
 } FakeOS;
 
 void FakeOS_init(FakeOS* os);
