@@ -8,8 +8,8 @@ typedef struct {
   ListItem list;
   ResourceType type;
   int duration;
-  int quantum;
-  int event_timer;
+  int predicted_burst;
+  //int event_timer;
 } ProcessEvent;
 
 // fake process

@@ -20,17 +20,17 @@ ListItem* MinBurst(FakeOS* os) {
 
   int min = 10000;
   ListItem* min_item;
-  int quantum;
+  int prediction;
   ListItem* node = os->ready.first;
 
   while(node) {
 
     FakePCB* pcb =  (FakePCB*) node;
     ProcessEvent* e = (ProcessEvent*)pcb->events.first;
-    quantum = e->quantum;
+    prediction = e->predicted_burst;
 
-    if (quantum < min) {
-      min = quantum;
+    if (prediction < min) {
+      min = prediction;
       min_item = node;
     }
 
@@ -67,12 +67,24 @@ void schedSJF(FakeOS* os, void* args_){
         assert(e->type==CPU);
 
         if (os->prev_quantum != 0) {
-          e->quantum = alpha * (e->quantum) + (1-alpha)*(os->prev_quantum);
+          e->predicted_burst = alpha * (e->duration) + (1-alpha)*(os->prev_quantum);
 
-          printf("sto calcolando il prossimo quanto che è: %d\n", e->quantum);
+          printf("sto calcolando il prossimo quanto che è: %d\n", e->predicted_burst);
         }
 
+        if (e->duration>args->quantum) {
+           ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
+           qe->list.prev=qe->list.next=0;
+           qe->type=CPU;
+           qe->duration=args->quantum;
+           e->duration-=args->quantum;
+           List_pushFront(&pcb->events, (ListItem*)qe);
+        }
+
+
       }
+
+
 
       return;
     
@@ -88,14 +100,12 @@ int main(int argc, char** argv) {
   FakeOS_init(&os);
   SchedSJFArgs ssjf_args;
   ssjf_args.quantum=5;
-  ssjf_args.alpha = 0.3;
-  //ssjf_args.num_cpu = 2;
+  ssjf_args.alpha = 0.7;
   os.schedule_args=&ssjf_args;
   os.schedule_fn=schedSJF;
-  ssjf_args.num_cpu = 4;
 
-  
-  for (int i=1; i<argc; ++i){
+
+  for (int i=1; i<argc-1; ++i){
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
     printf("loading [%s], pid: %d, events:%d",
@@ -106,6 +116,7 @@ int main(int argc, char** argv) {
       List_pushBack(&os.processes, (ListItem*)new_process_ptr);
     }
   }
+  ssjf_args.num_cpu = atoi(argv[argc - 1]);
 
 
   printf("num processes in queue %d\n", os.processes.size);
